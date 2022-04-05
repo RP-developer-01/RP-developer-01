@@ -34,8 +34,8 @@ My name is Roma. I'm full stack developer. I have been programming for more than
 **<h3>:link:Connect with me:</h3>**
 
    [<img src="https://cdn-icons.flaticon.com/png/512/4494/premium/4494737.png?token=exp=1649179543~hmac=94ef2bc29b8a87ffb9366186eed7ec6a" width="60px">](https://discord.com/users/last "DISCORD [last#2328] ")
-   [<img src="https://cdn-icons.flaticon.com/png/512/3670/premium/3670127.png?token=exp=1649179594~hmac=202e23f9609392855780fd47455155b6" width="60px">](https://twitter.com/iork0200 "TWITTER  [@iork0200] ")
-   [<img src="https://cdn-icons-png.flaticon.com/512/552/552486.png" width="60px">](https://mail.google.com/mail/u/0/?fs=1&tf=cm&source=mailto&to=rokimaun1@gmail.com "GMAIL [rokimaun1@gmail.com] ")
+     [<img src="https://cdn-icons.flaticon.com/png/512/3670/premium/3670127.png?token=exp=1649179594~hmac=202e23f9609392855780fd47455155b6" width="60px">](https://twitter.com/iork0200 "TWITTER  [@iork0200] ")
+     [<img src="https://cdn-icons-png.flaticon.com/512/552/552486.png" width="60px">](https://mail.google.com/mail/u/0/?fs=1&tf=cm&source=mailto&to=rokimaun1@gmail.com "GMAIL [rokimaun1@gmail.com] ")
    
 
 
