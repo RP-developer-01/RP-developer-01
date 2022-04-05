@@ -35,9 +35,7 @@ My name is Roma. I'm full stack developer. I have been programming for more than
 
    [<img src="https://cdn-icons.flaticon.com/png/512/4494/premium/4494737.png?token=exp=1649179543~hmac=94ef2bc29b8a87ffb9366186eed7ec6a" width="60px">](https://discord.com/users/last "DISCORD")
    [<img src="https://cdn-icons.flaticon.com/png/512/3670/premium/3670127.png?token=exp=1649179594~hmac=202e23f9609392855780fd47455155b6" width="60px">](https://discord.com/users/last "Необязательная подсказка")
-   [<img src="https://cdn-icons-png.flaticon.com/512/552/552486.png" width="60px">](https://discord.com/users/last "Необязательная подсказка")
-
-   Telegram<img src="https://cdn-icons.flaticon.com/png/512/3670/premium/3670070.png?token=exp=1649178873~hmac=b12e17e78099b8278afe47c716280b83" width="30px">()
+   [<img src="https://cdn-icons-png.flaticon.com/512/552/552486.png" width="60px">](https://discord.com/users/last "GMAIL")
    
 
 
