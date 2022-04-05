@@ -3,7 +3,7 @@
 ---
 
 <h2>
-My name is Roma. I have been programming for more than 2 years.
+My name is Roma. I'm full stack developer. I have been programming for more than 3 years.
 </h2>
 
 
@@ -28,6 +28,16 @@ My name is Roma. I have been programming for more than 2 years.
   - :white_medium_small_square: **Composer :white_medium_small_square: Docker :white_medium_small_square: Unit Testing**
   - :white_medium_small_square: **WordPress** :white_medium_small_square: *engine and* :white_medium_small_square: **Laravel** :white_medium_small_square: *framework*
 
-
 </details>
+
+
+**<h3>:link:Connect with me:</h3>**
+
+   [<img src="https://cdn-icons.flaticon.com/png/512/4494/premium/4494737.png?token=exp=1649179543~hmac=94ef2bc29b8a87ffb9366186eed7ec6a" width="60px">](https://discord.com/users/last "DISCORD")
+   [<img src="https://cdn-icons.flaticon.com/png/512/3670/premium/3670127.png?token=exp=1649179594~hmac=202e23f9609392855780fd47455155b6" width="60px">](https://discord.com/users/last "Необязательная подсказка")
+   [<img src="https://cdn-icons-png.flaticon.com/512/552/552486.png" width="60px">](https://discord.com/users/last "Необязательная подсказка")
+
+   Telegram<img src="https://cdn-icons.flaticon.com/png/512/3670/premium/3670070.png?token=exp=1649178873~hmac=b12e17e78099b8278afe47c716280b83" width="30px">()
+   
+
 
