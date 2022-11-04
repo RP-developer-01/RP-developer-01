@@ -6,12 +6,6 @@
 My name is Roma. I'm full stack developer. I have been programming for more than 3 years.
 </h2>
 
-
-**<h3>:key:Key points:</h3>**
-
-   - *Over 120 hours of experience:clock6:*<br>
-   - *Over 200 completed tasks:heavy_check_mark:*
-
 <details><summary><h3>:mortar_board:Skills:</h3></summary>
 
 - Strong knowledge of 
