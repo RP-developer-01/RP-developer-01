@@ -24,7 +24,7 @@ My name is Roma. I'm full stack developer. I have been programming for more than
 
 </details>
 
-[![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?RP-developer-01=anuraghazra)](https://github.com/anuraghazra/github-readme-stats)
+[![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=RP-developer-01&layout=compact)](https://github.com/anuraghazra/github-readme-stats)
 
 
 
