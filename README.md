@@ -24,20 +24,8 @@ My name is Roma. I'm full stack developer. I have been programming for more than
 
 </details>
 
-[![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=RP-developer-01&layout=compact)](https://github.com/anuraghazra/github-readme-stats)
-
-
-[![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=RP-developer-01&layout=compact)](https://github.com/anuraghazra/github-readme-stats)
-![](https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=RP-developer-0&theme=solarized_dark)
-
-Статистика языков в коммитах:
-![](https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=RP-developer-01&theme=solarized_dark)
-
-Статистика языков в репозиториях:
-![](https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=RP-developer-01&theme=solarized_dark)
-
-Статистика профиля:
-![](https://github-profile-summary-cards.vercel.app/api/cards/stats?username=RP-developer-01&theme=solarized_dark)
-
-Данные по коммитам за сутки:
-![](https://github-profile-summary-cards.vercel.app/api/cards/productive-time?username=RP-developer-01&theme=solarized_dark)
+![](https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=RP-developer-0&theme=tokyonight)
+![](https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=RP-developer-01&theme=tokyonight)
+![](https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=RP-developer-01&theme=tokyonight)
+![](https://github-profile-summary-cards.vercel.app/api/cards/stats?username=RP-developer-01&theme=tokyonight)
+![](https://github-profile-summary-cards.vercel.app/api/cards/productive-time?username=RP-developer-01&theme=tokyonight)
