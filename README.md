@@ -14,7 +14,7 @@
 ![](https://img.shields.io/badge/CSS-informational?style=flat-square&logo=css3&logoColor=ffffff&color=25A1E1)
 ![](https://img.shields.io/badge/JavaScript-informational?style=flat-square&logo=javascript&logoColor=323330&color=f0db4f)
 ![](https://img.shields.io/badge/TypeScript-informational?style=flat-square&logo=typescript&logoColor=ffffff&color=007acc)
-![](https://img.shields.io/badge/Vue-informational?style=flat-square&logo=vue.js&logoColor=ffffff&color=32475B)  
+![](https://img.shields.io/badge/Vue-informational?style=flat-square&logo=vue.js&logoColor=ffffff&color=32475B)
 ![](https://img.shields.io/badge/React-informational?style=flat-square&logo=react&logoColor=ffffff&color=066d89)
 ![](https://img.shields.io/badge/Gulp-informational?style=flat-square&logo=Gulp&logoColor=ffffff&color=C84643)
 ![](https://img.shields.io/badge/Webpack-informational?style=flat-square&logo=webpack&logoColor=ffffff&color=1c78c0)
