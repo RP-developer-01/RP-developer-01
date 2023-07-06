@@ -40,6 +40,7 @@ jobs:
             https://raw.githubusercontent.com/lowlighter/metrics/master/source/templates/markdown/example.pdf.md
           config_output: markdown-pdf
           plugin_rss: yes
+          plugin_activity: yes
           plugin_rss_source: https://news.ycombinator.com/rss
           plugin_rss_limit: 4
           plugin_isocalendar: yes
