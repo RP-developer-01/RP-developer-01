@@ -7,6 +7,11 @@
   <img height="170em" src="https://github-readme-stats.vercel.app/api/top-langs/?username=RP-developer-01&layout=compact&theme=white&icon_color=2a84ea&hide_border=true&bg_color=00000000&text_color=2a84ea" />
 </div>
 
+
+<picture>
+  <img src="/github-metrics.svg" alt="Metrics">
+</picture>
+
   
 <h1>Technologies & Tools</h1>
 
