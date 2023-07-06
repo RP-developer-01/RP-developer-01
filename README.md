@@ -2,8 +2,10 @@
 
 <h1>GitHub Stats</h1>
 
-  <img src="/github-metrics.svg" alt="Metrics">
-  <img src="/metrics.plugin.starlists.languages.svg" alt="Metrics">
+  <!--
+    Statistics of one repository.
+    <img src="/metrics.plugin.starlists.languages.svg" alt="MetricsPluginStarlistsLanguages">
+  -->
 
   <!--
     Statistics of one repository.
@@ -16,8 +18,9 @@
   <img height="170em" src="https://github-readme-stats.vercel.app/api/top-langs/?username=RP-developer-01&layout=compact&theme=white&icon_color=2a84ea&hide_border=true&bg_color=00000000&text_color=2a84ea" />
 </div>
 
-
-
+<div align="center">
+  <img src="/github-metrics.svg" alt="Metrics">
+</div>
   
 <h1>Technologies & Tools</h1>
 
