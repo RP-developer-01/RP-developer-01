@@ -2,8 +2,9 @@
 
 <h1>GitHub Stats</h1>
 
-  <img src="https://github.com/lowlighter/metrics/blob/examples/metrics.plugin.starlists.languages.svg" alt=""></img>
-  <img src="https://github.com/lowlighter/metrics/blob/examples/metrics.repository.svg" alt=""></img>
+  <img src="metrics.plugin.starlists.svg" alt=""></img>
+  <img src="/metrics.plugin.starlists.languages.svg" alt=""></img>
+  <img src="/metrics.repository.svg" alt=""></img>
   <img width="900" height="1" alt="">
       
 
