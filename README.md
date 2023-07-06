@@ -3,6 +3,8 @@
 <h1>GitHub Stats</h1>
 
   <img src="/github-metrics.svg" alt="Metrics">
+  <img src="/metrics.plugin.starlists.languages.svg" alt="Metrics">
+
   <!--
     Statistics of one repository.
     <img src="/metrics.repository.svg" alt="MetricsRepository">
