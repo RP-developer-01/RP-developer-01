@@ -3,6 +3,10 @@
 <h1>GitHub Stats</h1>
 
   <img src="/github-metrics.svg" alt="Metrics">
+  <img src="/metrics.repository.svg" alt="MetricsRepository">
+
+
+  <%- await embed(`example-languages-pdf`, {languages:true, languages_details:"percentage, bytes-size", config_display:"large"}) %>
 
 
 <div align="center">
