@@ -1,11 +1,13 @@
-name: Featured star list languages
-uses: lowlighter/metrics@latest
-with:
-  filename: metrics.plugin.starlists.languages.svg
-  token: NOT_NEEDED
-  base: ""
-  plugin_starlists: yes
-  plugin_starlists_languages: yes
-  plugin_starlists_limit_languages: 8
-  plugin_starlists_limit_repositories: 0
-  plugin_starlists_only: Awesome
+name: 📘 Repository template
+description: |
+  A template mimicking GitHub visual identity and specially crafted for repositories.
+examples:
+  default: https://github.com/lowlighter/metrics/blob/examples/metrics.repository.svg
+index: 1
+supports:
+  - repository
+formats:
+  - svg
+  - png
+  - jpeg
+  - json
