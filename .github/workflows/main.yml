@@ -34,6 +34,7 @@ jobs:
         uses: lowlighter/metrics@latest
         with:
           template: markdown
+          markdown_cache: .cache
           filename: metrics.markdown.pdf
           markdown: >-
             https://raw.githubusercontent.com/lowlighter/metrics/master/source/templates/markdown/example.pdf.md
@@ -46,3 +47,4 @@ jobs:
           config_padding: 5%
           token: ${{ secrets.METRICS_TOKEN }}
 
+    
