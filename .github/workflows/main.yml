@@ -36,6 +36,8 @@ jobs:
           filename: metrics.plugin.starlists.languages.svg
           token: ${{ secrets.METRICS_TOKEN }}
           base: ""
+          plugin_starlists: yes
+          plugin_starlists_languages: yes
 
 
     
