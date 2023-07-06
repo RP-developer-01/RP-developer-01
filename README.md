@@ -2,6 +2,11 @@
 
 <h1>GitHub Stats</h1>
 
+  <img src="https://github.com/lowlighter/metrics/blob/examples/metrics.plugin.starlists.svg" alt=""></img>
+<img src="https://github.com/lowlighter/metrics/blob/examples/metrics.plugin.starlists.languages.svg" alt=""></img>
+      <img width="900" height="1" alt="">
+      
+
 <div align="center">
   <img height="170em" src="https://github-readme-stats.vercel.app/api?username=RP-developer-01&layout=compact&show_icons=true&theme=white&icon_color=2a84ea&hide_border=true&bg_color=00000000&text_color=2a84ea" />
   <img height="170em" src="https://github-readme-stats.vercel.app/api/top-langs/?username=RP-developer-01&layout=compact&theme=white&icon_color=2a84ea&hide_border=true&bg_color=00000000&text_color=2a84ea" />
