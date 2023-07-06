@@ -2,10 +2,8 @@
 
 <h1>GitHub Stats</h1>
 
-  <img src="metrics.plugin.starlists.svg" alt=""></img>
-  <img src="/metrics.plugin.starlists.languages.svg" alt=""></img>
-  <img src="/metrics.repository.svg" alt=""></img>
-      
+  <img src="/github-metrics.svg" alt="Metrics">
+
 
 <div align="center">
   <img height="170em" src="https://github-readme-stats.vercel.app/api?username=RP-developer-01&layout=compact&show_icons=true&theme=white&icon_color=2a84ea&hide_border=true&bg_color=00000000&text_color=2a84ea" />
@@ -13,9 +11,6 @@
 </div>
 
 
-<picture>
-  <img src="/github-metrics.svg" alt="Metrics">
-</picture>
 
   
 <h1>Technologies & Tools</h1>
