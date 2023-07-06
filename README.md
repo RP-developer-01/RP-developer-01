@@ -1,12 +1,12 @@
-<h1 align="center">Hi there, I'm <a href="https://www.google.com.ua/?hl=ua" target="_blank">Roma.</a> I'm full stack developer.
+<h1 align="center">Hi there, I'm <a href="https://www.google.com" target="_blank">Roman.</a> I'm full stack developer.
 
 <h1>GitHub Stats</h1>
 
   <img src="/github-metrics.svg" alt="Metrics">
-  <img src="/metrics.repository.svg" alt="MetricsRepository">
-
-
-  <%- await embed(`example-languages-pdf`, {languages:true, languages_details:"percentage, bytes-size", config_display:"large"}) %>
+  <!--
+    Statistics of one repository.
+    <img src="/metrics.repository.svg" alt="MetricsRepository">
+  -->
 
 
 <div align="center">
