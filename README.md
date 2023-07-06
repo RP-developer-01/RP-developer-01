@@ -5,7 +5,6 @@
   <img src="metrics.plugin.starlists.svg" alt=""></img>
   <img src="/metrics.plugin.starlists.languages.svg" alt=""></img>
   <img src="/metrics.repository.svg" alt=""></img>
-  <img width="900" height="1" alt="">
       
 
 <div align="center">
