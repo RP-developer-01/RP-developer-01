@@ -1,10 +1,7 @@
 name: Metrics
 on:
-  # Schedule daily updates
   schedule: [{cron: "0 0 * * *"}]
-  # (optional) Run workflow manually
   workflow_dispatch:
-  # (optional) Run workflow when pushing on master/main
   push: {branches: ["master", "main"]}
 jobs:
   github-metrics:
@@ -41,7 +38,6 @@ jobs:
           plugin_starlists: yes
           plugin_starlists_limit_repositories: 2
           plugin_starlists_only: TC39
-        test:
           timeout: 1800000
 
       - name: Featured star list languages
@@ -55,7 +51,6 @@ jobs:
           plugin_starlists_limit_languages: 8
           plugin_starlists_limit_repositories: 0
           plugin_starlists_only: Awesome
-        test:
           timeout: 1800000
 
 
