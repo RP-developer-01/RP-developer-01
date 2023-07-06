@@ -23,9 +23,9 @@ jobs:
           template: repository
           filename: metrics.repository.svg
           token: ${{ secrets.METRICS_TOKEN }}
-          user: lowlighter
-          repo: metrics
+          user: RP-developer-01
+          repo: shopPhp
           plugin_lines: yes
           plugin_followup: yes
           plugin_projects: yes
-          plugin_projects_repositories: lowlighter/metrics/projects/1
+          plugin_projects_repositories: RP-developer-01/shopPhp
