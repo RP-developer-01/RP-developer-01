@@ -1,45 +1,67 @@
-steps:
-  - name: Setup Metrics
-    uses: lowlighter/metrics@latest
-    with:
-      token: ${{ secrets.METRICS_TOKEN }}
-      plugin_languages: yes
-      plugin_languages_indepth: yes
-      commits_authoring: "firstname lastname, username, username@users.noreply.github.com"
+name: Your Workflow Name
 
-  - name: Featured star list
-    uses: lowlighter/metrics@latest
-    with:
-      filename: metrics.plugin.starlists.svg
-      token: NOT_NEEDED
-      base: ""
-      plugin_starlists: yes
-      plugin_starlists_limit_repositories: 2
-      plugin_starlists_only: TC39
-    timeout-minutes: 30
+on:
+  push:
+    branches:
+      - main
 
-  - name: Featured star list languages
-    uses: lowlighter/metrics@latest
-    with:
-      filename: metrics.plugin.starlists.languages.svg
-      token: NOT_NEEDED
-      base: ""
-      plugin_starlists: yes
-      plugin_starlists_languages: yes
-      plugin_starlists_limit_languages: 8
-      plugin_starlists_limit_repositories: 0
-      plugin_starlists_only: Awesome
-    timeout-minutes: 30
-    
-  - name: Example
-    uses: lowlighter/metrics@latest
-    with:
-      template: repository
-      filename: metrics.repository.svg
-      token: ${{ secrets.METRICS_TOKEN_WITH_SCOPES }}
-      user: lowlighter
-      repo: metrics
-      plugin_lines: yes
-      plugin_followup: yes
-      plugin_projects: yes
-      plugin_projects_repositories: lowlighter/metrics/projects/1
+jobs:
+  metrics:
+    name: Setup Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Setup Metrics
+        uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          plugin_languages: yes
+          plugin_languages_indepth: yes
+          commits_authoring: "firstname lastname, username, username@users.noreply.github.com"
+
+      - name: Featured star list
+        uses: lowlighter/metrics@latest
+        with:
+          filename: metrics.plugin.starlists.svg
+          token: NOT_NEEDED
+          base: ""
+          plugin_starlists: yes
+          plugin_starlists_limit_repositories: 2
+          plugin_starlists_only: TC39
+        timeout-minutes: 30
+
+      - name: Featured star list languages
+        uses: lowlighter/metrics@latest
+        with:
+          filename: metrics.plugin.starlists.languages.svg
+          token: NOT_NEEDED
+          base: ""
+          plugin_starlists: yes
+          plugin_starlists_languages: yes
+          plugin_starlists_limit_languages: 8
+          plugin_starlists_limit_repositories: 0
+          plugin_starlists_only: Awesome
+        timeout-minutes: 30
+      
+      - name: Example
+        uses: lowlighter/metrics@latest
+        with:
+          template: repository
+          filename: metrics.repository.svg
+          token: ${{ secrets.METRICS_TOKEN_WITH_SCOPES }}
+          user: lowlighter
+          repo: metrics
+          plugin_lines: yes
+          plugin_followup: yes
+          plugin_projects: yes
+          plugin_projects_repositories: lowlighter/metrics/projects/1
