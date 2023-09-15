@@ -1,16 +1,11 @@
 <h1 align="center">Hi there, I'm <a href="https://www.google.com" target="_blank">Roman.</a> I'm full stack developer.
+<div align="center">
+  <img src="github-snake.svg" alt="MetricsPluginStarlistsLanguages" >
+</div>
 
 <h1>GitHub Stats</h1>
 
-  <!--
-    Statistics of one repository.
-    <img src="/metrics.plugin.starlists.languages.svg" alt="MetricsPluginStarlistsLanguages">
-  -->
-
-  <!--
-    Statistics of one repository.
-    <img src="/metrics.repository.svg" alt="MetricsRepository">
-  -->
+  
 
 
 <div align="center">
