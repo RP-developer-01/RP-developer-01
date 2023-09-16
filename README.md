@@ -3,7 +3,7 @@
   <img src="github-snake.svg" alt="MetricsPluginStarlistsLanguages" >
 </div>
 
-<h1>GitHub Stats</h1>
+<h1 align="center">GitHub Stats</h1>
 
   
 
@@ -17,7 +17,7 @@
   <img src="/github-metrics.svg" alt="Metrics">
 </div>
   
-<h1>Technologies & Tools</h1>
+<h1 align="center">Technologies & Tools</h1>
 
 ![](https://img.shields.io/badge/HTML-informational?style=flat-square&logo=html5&logoColor=ffffff&color=E44D26)
 ![](https://img.shields.io/badge/CSS-informational?style=flat-square&logo=css3&logoColor=ffffff&color=25A1E1)
@@ -32,3 +32,14 @@
 ![](https://img.shields.io/badge/PostgreSQL-informational?style=flat-square&logo=postgresql&logoColor=ffffff&color=336791)
 ![](https://img.shields.io/badge/MySQL-informational?style=flat-square&logo=mysql&logoColor=ffffff&color=007D7D)
 ![](https://img.shields.io/badge/MongoDB-informational?style=flat-square&logo=mongodb&logoColor=ffffff&color=3FA037)
+
+<h2  align="center">📫 Reach me on</h2>
+<p align="center">
+  <a target="_blank"href="https://www.linkedin.com/in/roman-p-90a488260/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?&style=for-the-badge&logo=linkedin&logoColor=white" /></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a target="_blank"href="https://t.me/roki0200"><img src="https://img.shields.io/badge/telegram-%231DA1F2.svg?&style=for-the-badge&logo=telegram&logoColor=white" /></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="mailto:rpdeveloper01@gmail.com?subject=Hello%20Ileri,%20From%20Github"><img src="https://img.shields.io/badge/gmail-%23D14836.svg?&style=for-the-badge&logo=gmail&logoColor=white" /></a>&nbsp;&nbsp;&nbsp;&nbsp;
+</p>
+
+<hr>
+
+<h2  align="center">💻 Check Out My Repos ⬇️ </h2>
