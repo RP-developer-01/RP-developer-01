@@ -7,8 +7,8 @@
 
 <div align="center">
 
-![](http://github-profile-summary-cards.vercel.app/api/cards/stats?username=RP-developer-01&theme=vue)
-![](http://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=RP-developer-01&theme=vue)
+![](http://github-profile-summary-cards.vercel.app/api/cards/stats?username=RP-developer-01&theme=transparent)
+![](http://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=RP-developer-01&theme=transparent)
 
 </div>
 
