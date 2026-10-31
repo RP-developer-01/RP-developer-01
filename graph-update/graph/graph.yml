@@ -1,0 +1,61 @@
+# ============================================================
+#  Налаштування графа проєктів.
+#  УВАГА: цей файл ПУБЛІЧНИЙ. Не пиши тут назви приватних репо —
+#  для них є секрет GRAPH_PRIVATE (див. інструкцію).
+# ============================================================
+user: RP-developer-01
+center: RP-developer-01
+ghost: "твій проєкт?"          # порожнє місце під наступний проєкт; "" — прибрати
+output: assets
+
+include_private: true          # потрібен секрет GRAPH_TOKEN
+include_forks: false
+include_archived: false
+exclude: []                    # публічні репо, яких не показувати (профільний репо виключено автоматично)
+
+# Напрямки = сектори графа, по годинниковій стрілці від верхнього лівого.
+# Сусідні напрямки з однаковим стеком → спільні технології стануть між ними.
+# Кольори: amber, sky, green, rose, teal, orange, lime, violet
+domains:
+  Trading: amber
+  Telegram bots: sky
+  Web apps: green
+  Desktop and tools: rose
+
+# Як репо потрапляє в напрямок (автоматично, без ручного заповнення):
+#   1) topic на GitHub: domain-trading, domain-telegram-bots, domain-web-apps, domain-desktop-and-tools
+#   2) правила нижче: рахуються збіги зі стеком/мовами/topics, перемагає напрямок з найбільшою кількістю
+#   3) default_domain
+domain_rules:
+  Trading: [ccxt, IBKR API, BingX API, pandas, NumPy, trading, crypto]
+  Telegram bots: [aiogram, PTB, telebot, Telethon, Pyrogram, grammY, Telegraf, telegram-bot]
+  Desktop and tools: [Tauri, Electron, Rust, Apps Script]
+  Web apps: [Firebase, React, Vue, Svelte, Next.js, HTML, JavaScript]
+default_domain: null           # примусово класти «непідібрані» репо в цей напрямок; null — див. unsorted
+
+# Репо без напрямку (публічні й приватні) показуються окремими «вільними» групами
+# за основною мовою — з центром не з'єднані, пунктирні.
+unsorted:
+  show: true                   # false — не показувати їх зовсім
+  label: "{lang} · other"      # підпис групи; {lang} — основна мова
+  max_groups: 3                # решта мов зливається в групу "misc"
+
+highlight_dim: 0.68                 # як сильно притухає решта графа під час підсвітки: 1 — зовсім ні, 0.2 — сильно
+private_labels: none               # none — приватні репо без підпису (опис з'являється при підсвітці); mask — плашки замість назви
+private_about_from_github: false   # true — брати опис приватних репо з поля description на GitHub
+
+# Ручні винятки ТІЛЬКИ для публічних репо
+repos:
+  # kuznia:        {domain: Desktop and tools, about: "single-file dashboards"}
+  # old-repo:      {hide: true}
+  # ugly-name:     {title: "Nice name"}
+
+# Додаткові пакети → назва вузла (доповнює вбудований список)
+frameworks:
+  # pybingx: BingX API
+
+limits:
+  min_lang_share: 0.15         # мова з часткою < 15% у репо не стає ребром (і максимум 3 мови на репо)
+  max_tech: 18                 # максимум технологій на зовнішньому кільці
+  highlight_slots: 12          # скільки вузлів по черзі підсвічується
+  max_projects: 24             # більше — граф стає тісним; беруться найактивніші за комітами
