@@ -33,6 +33,7 @@ class Data:
     updated: date = field(default_factory=date.today)
     min_lang_share: float = 0.15
     private_labels: str = "none"    # none — приватні без підпису; mask — плашки замість назви
+    highlight_dim: float = 0.68     # наскільки притухає решта графа під час підсвітки (1 — не притухає)
     max_tech: int = 18
     max_slots: int = 12
     max_projects: int = 16
@@ -325,7 +326,7 @@ class Graph:
         kind = self.kind[k]
         if kind == "me": return self.d.center
         if kind == "hub": return k[2:]
-        if kind == "group": return self.d.unsorted_label.format(lang=k[2:])
+        if kind == "group": return "other" if k[2:] == "misc" else self.d.unsorted_label.format(lang=k[2:])
         if kind == "tech": return k[2:]
         name = self.repo_of[k].name
         return name if len(name) <= 18 else name[:17] + "…"
@@ -371,7 +372,7 @@ def graph_svg(g: Graph, theme: str) -> str:
     IDX = {k: i for i, k in enumerate(keys)}
     EID = {frozenset((a, b)): (f"e{IDX[a]}_{IDX[b]}", a) for a, b in g.edges}
     SEQ = g.slots()
-    FADE, HOLD, IDLE, START = .7, 2.9, .9, 3.0
+    FADE, HOLD, IDLE, START = 1.2, 3.0, 2.6, 3.5   # повільні м'які переходи + довга пауза, коли граф видно цілком
     SLOT = 2 * FADE + HOLD + IDLE; CYCLE = SLOT * max(len(SEQ), 1)
 
     def anim(kt: list[float], vs: list[str]) -> str:
@@ -451,7 +452,7 @@ def graph_svg(g: Graph, theme: str) -> str:
     o.append(f'<rect width="{W}" height="{H}" rx="14" fill="url(#bg)"/>')
 
     # базовий шар
-    o.append(f'<g><animate attributeName="opacity" {dim(".16")}/>' if SEQ else '<g>')
+    o.append(f'<g><animate attributeName="opacity" {dim(f"{d.highlight_dim:.2f}")}/>' if SEQ and d.highlight_dim < 1 else '<g>')
     o.append('<g opacity="0"><animate attributeName="opacity" begin="1.1s" dur="1.1s" fill="freeze" values="0;1" calcMode="spline" keyTimes="0;1" keySplines="0.2 0 0.2 1"/>')
     for a, b in g.edges:
         dash = ' stroke-dasharray="2 3"' if g.kind[a] == "group" or g.kind[b] == "group" else ""
@@ -490,18 +491,15 @@ def graph_svg(g: Graph, theme: str) -> str:
         L = [f'<g opacity="0"><animate attributeName="opacity" {pulse(si)}/>']
         for n in g.nb[f]:
             eid, a = EID[frozenset((f, n))]; fwd = a == f
-            L.append(f'<use href="#{eid}" stroke="{fc}" stroke-width="1.4" opacity=".75"/>')
-            L.append(f'<use href="#{eid}" stroke="{fc if fk == "project" else c["acc2"]}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="7 100">'
-                     f'<animate attributeName="stroke-dashoffset" values="{"107;0" if fwd else "0;107"}" dur="1.5s" repeatCount="indefinite" '
+            L.append(f'<use href="#{eid}" stroke="{fc}" stroke-width="1.2" opacity=".55"/>')
+            L.append(f'<use href="#{eid}" stroke="{fc}" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="5 100" opacity=".8">'
+                     f'<animate attributeName="stroke-dashoffset" values="{"105;0" if fwd else "0;105"}" dur="2.4s" repeatCount="indefinite" '
                      f'calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.6 1"/></use>')
         for n in [f, *g.nb[f]]:
             i, kind, (x, y) = IDX[n], g.kind[n], P[n]; r = g.radius(n)
             col = fc if n == f else (c["text"] if kind == "tech" else ncol(n))
             if n == f:
-                L.append(f'<g>{DR[n].g()}<circle cx="{x:.1f}" cy="{y:.1f}" r="{r + 5:.1f}" fill="none" stroke="{fc}" stroke-width="1.3"/>'
-                         f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r + 5:.1f}" fill="none" stroke="{fc}" stroke-width="1">'
-                         f'<animate attributeName="r" values="{r + 5:.1f};{r + 20:.1f}" dur="2.2s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines="0.2 0 0.2 1"/>'
-                         f'<animate attributeName="opacity" values=".7;0" dur="2.2s" repeatCount="indefinite"/></circle></g>')
+                L.append(f'<g>{DR[n].g()}<circle cx="{x:.1f}" cy="{y:.1f}" r="{r + 4:.1f}" fill="none" stroke="{fc}" stroke-width="1" opacity=".7"/></g>')
             L.append(f'<use href="#c{i}" fill="{col}" stroke="{col}"/><use href="#t{i}" fill="{c["text"]}" color="{c["text"]}" {halo}/>')
             lines: list[str] = []
             if n == f and fk == "project":
