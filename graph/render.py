@@ -31,7 +31,8 @@ class Data:
     repos: list[Repo]
     ghost: str = ""
     updated: date = field(default_factory=date.today)
-    min_lang_share: float = 0.05
+    min_lang_share: float = 0.15
+    private_labels: str = "none"    # none — приватні без підпису; mask — плашки замість назви
     max_tech: int = 18
     max_slots: int = 12
     max_projects: int = 16
@@ -41,7 +42,6 @@ class Data:
 
 W, H = 960, 600
 CX, CY = W / 2, H / 2
-RINGS = {"hub": (122, 74), "project": (232, 146), "tech": (392, 236)}
 FONT = "-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
 EASE = "0.42 0 0.58 1"
 
@@ -90,9 +90,10 @@ class Graph:
         self.is_lang: dict[str, bool] = {}
         for r in self.repos:
             tot = sum(r.langs.values()) or 1
+            top_langs = sorted(r.langs, key=lambda l: -r.langs[l])[:3]
             for lang, b in r.langs.items():
                 self.lang_bytes[lang] = self.lang_bytes.get(lang, 0) + b
-                if b / tot >= data.min_lang_share:
+                if b / tot >= data.min_lang_share and lang in top_langs:
                     self.tech_repos.setdefault(lang, []).append(r); self.is_lang[lang] = True
             for s in r.stack:
                 if r not in self.tech_repos.setdefault(s, []):
@@ -134,63 +135,191 @@ class Graph:
         """Вузол належить вільній групі (проєкт без напрямку або сама група)."""
         return self.kind[k] == "group" or (self.kind[k] == "project" and id(self.repo_of[k]) in self.group_of)
 
-    # ---------- геометрія ----------
-    def _layout(self) -> None:
-        ang: dict[str, float] = {"me": 0.0}
-        parents = [f"d:{dm}" for dm in self.domains] + [f"g:{gn}" for gn in self.groups]
-        kids = {p: [k for k in self.nodes if self.kind[k] == "project" and self.parent(self.repo_of[k]) == p] for p in parents}
-        weight = {p: len(kids[p]) + 1.0 for p in parents}   # ширина сектора ∝ кількості проєктів
-        total = sum(weight.values()) or 1; cur = -180.0
-        for p in parents:
-            sector = 360 * weight[p] / total; a = cur + sector / 2; cur += sector
-            ang[p] = a; ps = kids[p]
-            step = min(30.0, sector * .8 / max(len(ps), 1))
-            for j, k in enumerate(ps):
-                ang[k] = a + (j - (len(ps) - 1) / 2) * step
-        projects = [k for k in self.nodes if self.kind[k] == "project"]
-        self._relax(ang, projects, min(15.0, 360 / max(len(projects), 1) * .9))
-        if self.d.ghost and projects:
-            srt = sorted(projects, key=lambda k: ang[k] % 360)
-            gaps = [((ang[srt[(i + 1) % len(srt)]] - ang[k]) % 360 or 360, k) for i, k in enumerate(srt)]
-            # серед найбільших проміжків — той, що ближче до лівого/правого краю (там більше місця)
-            g, k = max(gaps, key=lambda gk: (round(gk[0], 1), abs(math.cos(math.radians(ang[gk[1]] + gk[0] / 2)))))
-            ang["ghost"] = ang[k] + g / 2
-        techs = [k for k in self.nodes if self.kind[k] == "tech"]
-        for t in techs:
-            ps = [ang[p] for p in self.nb[t]]
-            ang[t] = math.degrees(math.atan2(sum(math.sin(math.radians(a)) for a in ps), sum(math.cos(math.radians(a)) for a in ps)))
-        self._relax(ang, techs, min(19.5, 360 / max(len(techs), 1) * .92))
-        self.ang = ang
-        self.pos: dict[str, tuple[float, float]] = {}
-        for k in list(self.nodes) + (["ghost"] if "ghost" in ang else []):
-            if k == "me":
-                self.pos[k] = (CX, CY); continue
-            ring = "project" if k == "ghost" else "hub" if self.kind[k] == "group" else self.kind[k]
-            rx, ry = RINGS[ring]; a = math.radians(ang[k])
-            self.pos[k] = (CX + rx * math.cos(a), CY + ry * math.sin(a))
+    # ---------- геометрія: фізична симуляція як в Obsidian ----------
+    LINK = {  # (довжина пружини, жорсткість)
+        ("me", "hub"): (95, .55), ("hub", "project"): (58, .5), ("group", "project"): (48, .55),
+        ("project", "tech"): (90, .13),
+    }
+    CHARGE = {"me": 650, "hub": 480, "group": 320, "project": 170, "tech": 150}
+    BOX = (72, W - 72, 44, H - 64)
+
+    def _link(self, a: str, b: str) -> tuple[float, float]:
+        ka, kb = self.kind[a], self.kind[b]
+        return self.LINK.get((ka, kb)) or self.LINK.get((kb, ka)) or (80, .3)
+
+    def _simulate(self, seed: int) -> dict[str, list[float]]:
+        rnd = random.Random(seed)
+        pos: dict[str, list[float]] = {"me": [CX, CY]}
+        parents = [k for k in self.nodes if self.kind[k] in ("hub", "group")]
+        off = rnd.uniform(0, math.tau)
+        for i, p in enumerate(parents):  # стартова підказка: напрямки навколо центру
+            a = off + math.tau * i / max(len(parents), 1)
+            r0 = 110 if self.kind[p] == "hub" else 190
+            pos[p] = [CX + r0 * 1.5 * math.cos(a), CY + r0 * math.sin(a)]
+        for k in self.nodes:
+            if self.kind[k] == "project":
+                px, py = pos[self.parent(self.repo_of[k])]
+                pos[k] = [px + (px - CX) * .45 + rnd.uniform(-35, 35), py + (py - CY) * .45 + rnd.uniform(-25, 25)]
+        for k in self.nodes:
+            if self.kind[k] == "tech":
+                ps = [pos[n] for n in self.nb[k]]
+                mx = sum(q[0] for q in ps) / len(ps); my = sum(q[1] for q in ps) / len(ps)
+                pos[k] = [mx + (mx - CX) * .4 + rnd.uniform(-30, 30), my + (my - CY) * .4 + rnd.uniform(-30, 30)]
+        keys = self.nodes; n = len(keys)
+        vel = {k: [0.0, 0.0] for k in keys}
+        deg = {k: max(len(self.nb[k]), 1) for k in keys}
+        links = [(a, b, *self._link(a, b)) for a, b in self.edges]
+        coll = {k: self.radius(k) + (18 if self.kind[k] in ("project", "tech") else 22) for k in keys}
+        alpha = 1.0; steps = 340; decay = (0.015) ** (1 / steps)
+        for _ in range(steps):
+            # відштовхування (many-body)
+            for i in range(n):
+                a = keys[i]; pa = pos[a]; va = vel[a]
+                for j in range(i + 1, n):
+                    b = keys[j]; pb = pos[b]
+                    dx = pa[0] - pb[0]; dy = pa[1] - pb[1]; d2 = dx * dx + dy * dy + 1.0
+                    if d2 > 160000: continue
+                    fa = self.CHARGE[self.kind[b]] * alpha / d2; fb = self.CHARGE[self.kind[a]] * alpha / d2
+                    va[0] += dx * fa; va[1] += dy * fa; vel[b][0] -= dx * fb; vel[b][1] -= dy * fb
+            # пружини
+            for a, b, L, s in links:
+                pa, pb = pos[a], pos[b]
+                dx = pb[0] + vel[b][0] - pa[0] - vel[a][0]; dy = pb[1] + vel[b][1] - pa[1] - vel[a][1]
+                d = math.hypot(dx, dy) or .01
+                f = (d - L) / d * alpha * s; bias = deg[a] / (deg[a] + deg[b])
+                vel[b][0] -= dx * f * bias; vel[b][1] -= dy * f * bias
+                vel[a][0] += dx * f * (1 - bias); vel[a][1] += dy * f * (1 - bias)
+            # гравітація до центру (по Y сильніша → граф ширший за висоту)
+            for k in keys:
+                vel[k][0] += (CX - pos[k][0]) * .022 * alpha; vel[k][1] += (CY - pos[k][1]) * .045 * alpha
+            for k in keys:
+                vel[k][0] *= .58; vel[k][1] *= .58
+                pos[k][0] += vel[k][0]; pos[k][1] += vel[k][1]
+            pos["me"] = [CX, CY]
+            # зіткнення (по вертикалі більший запас — під вузлом підпис)
+            for _c in range(2):
+                for i in range(n):
+                    a = keys[i]
+                    for j in range(i + 1, n):
+                        b = keys[j]
+                        dx = pos[a][0] - pos[b][0]; dy = (pos[a][1] - pos[b][1]) * 1.6
+                        d = math.hypot(dx, dy) or .01; m = coll[a] + coll[b]
+                        if d < m:
+                            push = (m - d) / d * .5
+                            if a != "me": pos[a][0] += dx * push * .5; pos[a][1] += dy * push * .3
+                            if b != "me": pos[b][0] -= dx * push * .5; pos[b][1] -= dy * push * .3
+            alpha *= decay
+        return pos
 
     @staticmethod
-    def _relax(ang: dict[str, float], keys: list[str], gap: float) -> None:
-        if len(keys) < 2:
-            return
-        for _ in range(3000):
-            order = sorted(keys, key=lambda k: ang[k] % 360); moved = False
-            for i in range(len(order)):
-                a, b = order[i], order[(i + 1) % len(order)]
-                diff = (ang[b] - ang[a]) % 360
-                if diff < gap - 1e-6:
-                    push = min((gap - diff) / 2, 1.5); ang[a] -= push; ang[b] += push; moved = True
-            if not moved:
-                return
+    def _cross(p1: list[float], p2: list[float], p3: list[float], p4: list[float]) -> bool:
+        def ccw(a: list[float], b: list[float], c: list[float]) -> bool:
+            return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0])
+        return ccw(p1, p3, p4) != ccw(p2, p3, p4) and ccw(p1, p2, p3) != ccw(p1, p2, p4)
+
+    def _score(self, pos: dict[str, list[float]]) -> float:
+        s = 0.0; es = self.edges
+        for i in range(len(es)):
+            a, b = es[i]
+            for j in range(i + 1, len(es)):
+                c, d = es[j]
+                if len({a, b, c, d}) == 4 and self._cross(pos[a], pos[b], pos[c], pos[d]):
+                    s += 1
+        ks = self.nodes
+        for i in range(len(ks)):
+            for j in range(i + 1, len(ks)):
+                d = math.hypot(pos[ks[i]][0] - pos[ks[j]][0], (pos[ks[i]][1] - pos[ks[j]][1]) * 1.6)
+                s += max(0.0, 46 - d) * .8
+        return s
+
+    def _fit(self, pos: dict[str, list[float]]) -> dict[str, tuple[float, float]]:
+        """Вписати граф у полотно: масштаб ≈1 (зменшуємо тільки якщо не влазить), центр bbox → центр полотна."""
+        x0, x1, y0, y1 = self.BOX
+        xs = [v[0] for v in pos.values()]; ys = [v[1] for v in pos.values()]
+        bw = max(xs) - min(xs) or 1; bh = max(ys) - min(ys) or 1
+        s = min(1.12, (x1 - x0) / bw, (y1 - y0) / bh)
+        mx = (max(xs) + min(xs)) / 2; my = (max(ys) + min(ys)) / 2
+        cy = (y0 + y1) / 2
+        return {k: (CX + (v[0] - mx) * s, cy + (v[1] - my) * s) for k, v in pos.items()}
+
+    def _layout(self) -> None:
+        best: tuple[float, dict[str, tuple[float, float]]] | None = None
+        for seed in range(6):
+            fitted = self._fit(self._simulate(seed))
+            self.pos = fitted; self._place_labels()
+            score = self._score({k: list(v) for k, v in fitted.items()}) + self.lab_overlap * .05
+            if best is None or score < best[0]:
+                best = (score, fitted)
+        assert best is not None
+        self.pos = best[1]
+        self._place_labels()
+        if self.d.ghost:
+            self._place_ghost()
+
+    # ---------- підписи: без накладань ----------
+    def fs(self, k: str) -> float:
+        return {"me": 13, "hub": 9.5, "group": 9.5, "project": 11.5, "tech": 10.5}[self.kind[k]]
+
+    def text_w(self, k: str) -> float:
+        t = self.label_text(k); f = self.fs(k)
+        return len(t) * f * (.62 if self.kind[k] in ("hub", "group") else .56) + (len(t) * 1.4 if self.kind[k] in ("hub", "group") else 0)
+
+    def label_text(self, k: str) -> str:
+        if self.kind[k] == "project" and self.repo_of[k].private and self.d.private_labels == "none":
+            return ""
+        return self.label(k)
+
+    def _place_labels(self) -> None:
+        boxes: list[tuple[float, float, float, float]] = []
+        for k in self.nodes:  # вузли — теж перешкоди
+            x, y = self.pos[k]; r = self.radius(k) + 2
+            boxes.append((x - r, y - r, x + r, y + r))
+        order = sorted(self.nodes, key=lambda k: ({"me": 0, "hub": 1, "group": 2, "tech": 3, "project": 4}[self.kind[k]], -len(self.nb[k])))
+        self.lab: dict[str, tuple[float, float, str, int]] = {}
+        self.lab_overlap = 0.0
+        for k in order:
+            x, y = self.pos[k]; r = self.radius(k); f = self.fs(k); w = self.text_w(k) if self.label_text(k) else 60
+            cands = [
+                (x, y + r + f + 3, "middle", 1, (x - w / 2, y + r + 2, x + w / 2, y + r + f + 5)),
+                (x + r + 6, y + f * .35, "start", 1, (x + r + 4, y - f * .6, x + r + 6 + w, y + f * .5)),
+                (x - r - 6, y + f * .35, "end", 1, (x - r - 6 - w, y - f * .6, x - r - 4, y + f * .5)),
+                (x, y - r - 6, "middle", -1, (x - w / 2, y - r - f - 6, x + w / 2, y - r - 3)),
+            ]
+            def overlap(b: tuple[float, float, float, float]) -> float:
+                s = 0.0
+                for o in boxes:
+                    ix = min(b[2], o[2]) - max(b[0], o[0]); iy = min(b[3], o[3]) - max(b[1], o[1])
+                    if ix > 0 and iy > 0: s += ix * iy
+                if b[0] < 6 or b[2] > W - 6: s += 500
+                return s
+            pick = min(cands, key=lambda c: overlap(c[4]) + cands.index(c) * 4)
+            self.lab[k] = pick[:4]
+            if self.label_text(k):
+                self.lab_overlap += overlap(pick[4])
+            if self.label_text(k):
+                boxes.append(pick[4])
+        self.boxes = boxes
+
+    def _place_ghost(self) -> None:
+        best, bd = None, -1.0
+        for gx in range(120, W - 160, 12):
+            for gy in range(70, H - 80, 12):
+                dmin = min(math.hypot(gx - x, (gy - y) * 1.4) for x, y in self.pos.values())
+                inside = any(b[0] - 10 < gx < b[2] + 90 and b[1] - 12 < gy < b[3] + 12 for b in self.boxes)
+                if inside: continue
+                score = min(dmin, 90) - math.hypot(gx - CX, (gy - CY) * 1.5) * .12
+                if score > bd: best, bd = (gx, gy), score
+        if best:
+            self.pos["ghost"] = (float(best[0]), float(best[1]))
 
     def radius(self, k: str) -> float:
         kind = self.kind[k]
         if kind == "me": return 9
-        if kind == "hub": return 6
+        if kind == "hub": return 7
         if kind == "group": return 5
         if kind == "project":
-            c = self.repo_of[k].commits; return 6.5 if c >= 200 else 5.2 if c >= 100 else 4.2
-        m = len(self.nb[k]); return 4.6 if m >= 3 else 3.6 if m == 2 else 2.8
+            c = self.repo_of[k].commits; return 6 if c >= 200 else 5 if c >= 60 else 4
+        m = len(self.nb[k]); return min(2.6 + 1.1 * math.sqrt(m), 7.5)   # як в Obsidian: більше зв'язків — більший вузол
 
     def label(self, k: str) -> str:
         kind = self.kind[k]
@@ -202,12 +331,7 @@ class Graph:
         return name if len(name) <= 18 else name[:17] + "…"
 
     def label_spec(self, k: str) -> tuple[float, float, str, int]:
-        x, y = self.pos[k]; r = 7 if k == "ghost" else self.radius(k)
-        if k == "me": return x, y + r + 18, "middle", 1
-        a = math.radians(self.ang[k]); c, s = math.cos(a), math.sin(a)
-        if c > .42: return x + r + 7, y + 4, "start", 1
-        if c < -.42: return x - r - 7, y + 4, "end", 1
-        return (x, y - r - 8, "middle", -1) if s < 0 else (x, y + r + 15, "middle", 1)
+        return self.lab[k]
 
     def slots(self) -> list[str]:
         ps = [k for k in self.nodes if self.kind[k] == "project"]
@@ -292,15 +416,18 @@ def graph_svg(g: Graph, theme: str) -> str:
                     + DR[a].a("x1", P[a][0], 0) + DR[a].a("y1", P[a][1], 1) + DR[b].a("x2", P[b][0], 0) + DR[b].a("y2", P[b][1], 1) + '</line>')
     for k in g.nodes:
         i, kind, (x, y) = IDX[k], g.kind[k], P[k]; r = g.radius(k)
-        if kind == "hub":
-            shape = f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="none" stroke-width="1.6"/><circle cx="{x:.1f}" cy="{y:.1f}" r="2"/>'
+        if kind == "hub":  # заповнене коло + тонке кільце навколо
+            shape = (f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r + 3.5:.1f}" fill="none" stroke-width="1" opacity=".45"/>'
+                     f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}"/>')
         elif kind == "group":  # пунктирне кільце: група «без напрямку», з центром не з'єднана
             shape = f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="none" stroke-width="1.3" stroke-dasharray="2.2 2.2"/>'
         else:
             shape = f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}"/>'
         defs.append(f'<g id="c{i}">{DR[k].g()}{shape}</g>')
         lx, ly, anc, _ = g.label_spec(k)
-        if kind == "project" and g.repo_of[k].private:
+        if kind == "project" and g.repo_of[k].private and d.private_labels == "none":
+            defs.append(f'<g id="t{i}"/>')
+        elif kind == "project" and g.repo_of[k].private:
             ww = [w * 5.6 for w in _mask_words(g.repo_of[k].name)]; tot = sum(ww) + 5 * (len(ww) - 1) + 14
             x0 = lx if anc == "start" else lx - tot if anc == "end" else lx - tot / 2
             bars = ""; bx = x0 + 14
@@ -314,36 +441,32 @@ def graph_svg(g: Graph, theme: str) -> str:
         else:
             if kind in ("hub", "group"):
                 op = ' opacity=".75"' if kind == "group" else ""
-                txt = (f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anc}" font-size="9.5" font-weight="600" letter-spacing="1.4"{op}>'
+                txt = (f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anc}" font-size="{g.fs(k)}" font-weight="600" letter-spacing="1.4"{op}>'
                        f'{escape(g.label(k).upper())}</text>')
             else:
-                fs = {"me": 13, "project": 12, "tech": 11}[kind]; fw = 600 if kind == "me" else 500 if kind == "project" else 400
+                fs = g.fs(k); fw = 600 if kind == "me" else 500 if kind == "project" else 400
                 txt = f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anc}" font-size="{fs}" font-weight="{fw}">{escape(g.label(k))}</text>'
             defs.append(f'<g id="t{i}">{DR[k].g()}{txt}</g>')
     o.append("<defs>" + "\n".join(defs) + "</defs>")
     o.append(f'<rect width="{W}" height="{H}" rx="14" fill="url(#bg)"/>')
-    for ring, (rx, ry) in RINGS.items():
-        o.append(f'<ellipse cx="{CX}" cy="{CY}" rx="{rx}" ry="{ry}" fill="none" stroke="{c["guide"]}" stroke-width="1" stroke-dasharray="0.1 7" stroke-linecap="round">'
-                 f'<animate attributeName="stroke-dashoffset" from="0" to="-{70 if ring == "tech" else 49}" dur="{40 if ring == "tech" else 30}s" repeatCount="indefinite"/></ellipse>')
 
     # базовий шар
     o.append(f'<g><animate attributeName="opacity" {dim(".16")}/>' if SEQ else '<g>')
     o.append('<g opacity="0"><animate attributeName="opacity" begin="1.1s" dur="1.1s" fill="freeze" values="0;1" calcMode="spline" keyTimes="0;1" keySplines="0.2 0 0.2 1"/>')
     for a, b in g.edges:
         dash = ' stroke-dasharray="2 3"' if g.kind[a] == "group" or g.kind[b] == "group" else ""
-        o.append(f'<use href="#e{IDX[a]}_{IDX[b]}" stroke="{c["link"]}" stroke-width="1"{dash}/>')
+        o.append(f'<use href="#e{IDX[a]}_{IDX[b]}" stroke="{c["link"]}" stroke-width=".9"{dash}/>')
     o.append('</g>')
     if "ghost" in P:
         gx, gy = P["ghost"]
-        a = math.cos(math.radians(g.ang["ghost"]))
-        lx, anc = (gx + 13, "start") if a >= 0 else (gx - 13, "end")
+        lx, anc = gx + 13, "start"
         o.append(f'<g opacity="0"><animate attributeName="opacity" begin="2s" dur="1s" fill="freeze" values="0;1"/>{DR["ghost"].g()}'
                  f'<circle cx="{gx:.1f}" cy="{gy:.1f}" r="6" fill="none" stroke="{c["faint"]}" stroke-width="1.2" stroke-dasharray="2 3">'
                  f'<animateTransform attributeName="transform" type="rotate" from="0 {gx:.1f} {gy:.1f}" to="360 {gx:.1f} {gy:.1f}" dur="24s" repeatCount="indefinite"/></circle>'
                  f'<text x="{lx:.1f}" y="{gy + 4:.1f}" text-anchor="{anc}" font-size="11" fill="{c["faint"]}" {halo}>{escape(d.ghost)}</text></g>')
     for k in g.nodes:
         i, kind, (x, y) = IDX[k], g.kind[k], P[k]
-        ring = {"me": 0, "hub": 1, "group": 1, "project": 2, "tech": 3}[kind]; delay = .15 + ring * .28 + (g.ang[k] % 360) / 360 * .25
+        delay = .15 + math.hypot(x - CX, y - CY) / 480
         ox, oy = (CX - x) * .35, (CY - y) * .35
         enter = (f'<animateTransform attributeName="transform" type="translate" dur="{1.2 + delay:.2f}s" fill="freeze" calcMode="spline" '
                  f'keyTimes="0;{delay / (1.2 + delay):.3f};1" keySplines="0 0 1 1;0.16 1 0.3 1" values="{ox:.1f} {oy:.1f};{ox:.1f} {oy:.1f};0 0"/>'
@@ -388,12 +511,13 @@ def graph_svg(g: Graph, theme: str) -> str:
             elif n == f and fk == "tech":
                 t = f[2:]; cnt = len(g.nb[f])
                 lines = [f"{cnt} repo{'s' if cnt != 1 else ''}" + (f" · {g.lang_bytes[t] / g.all_bytes:.0%} of code" if g.is_lang.get(t) else "")]
-            elif fk == "tech" and g.is_lang.get(f[2:]) and kind == "project":
+            elif fk == "tech" and g.is_lang.get(f[2:]) and kind == "project" and len(g.nb[f]) <= 5:  # більше — каша з підписів
                 rp = g.repo_of[n]; lines = [f"{f[2:]} {rp.langs.get(f[2:], 0) / (sum(rp.langs.values()) or 1):.0%}"]
             if lines:
                 lx, ly, anc, dr = g.label_spec(n)
                 seq = lines if dr > 0 else list(reversed(lines))
-                txt = "".join(f'<text x="{lx:.1f}" y="{ly + dr * 14 * (j + 1):.1f}" text-anchor="{anc}" font-size="10.5" fill="{c["dim"]}" {halo} '
+                base = 0 if not g.label_text(n) else 1   # приватний без підпису — статистика стає на місце підпису
+                txt = "".join(f'<text x="{lx:.1f}" y="{ly + dr * 14 * (j + base):.1f}" text-anchor="{anc}" font-size="10.5" fill="{c["dim"]}" {halo} '
                               f'style="font-variant-numeric:tabular-nums">{escape(s)}</text>' for j, s in enumerate(seq))
                 L.append(f'<g>{DR[n].g()}{txt}</g>')
         L.append('</g>'); o.append("".join(L))

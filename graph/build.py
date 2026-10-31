@@ -28,9 +28,10 @@ def main() -> None:
         sys.exit("no repos to show - check graph.yml (domains, domain_rules, unsorted.show)")
     lim = cfg.get("limits", {}); uns = cfg.get("unsorted") or {}
     data = Data(center=cfg.get("center", user), domains=cfg["domains"], repos=repos, ghost=cfg.get("ghost", ""),
-                updated=date.today(), min_lang_share=lim.get("min_lang_share", .05), max_tech=lim.get("max_tech", 18),
-                max_slots=lim.get("highlight_slots", 12), max_projects=lim.get("max_projects", 16),
-                unsorted_label=uns.get("label", "{lang} · other"), max_groups=uns.get("max_groups", 3))
+                updated=date.today(), min_lang_share=lim.get("min_lang_share", .15), max_tech=lim.get("max_tech", 18),
+                max_slots=lim.get("highlight_slots", 12), max_projects=lim.get("max_projects", 24),
+                unsorted_label=uns.get("label", "{lang} · other"), max_groups=uns.get("max_groups", 3),
+                private_labels=cfg.get("private_labels", "none"))
     for p in render_all(data, ROOT / cfg.get("output", "assets")):
         print("wrote", p.relative_to(ROOT), f"{p.stat().st_size // 1024} KB")
 
