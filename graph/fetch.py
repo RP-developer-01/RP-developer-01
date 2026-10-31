@@ -177,7 +177,9 @@ def fetch(cfg: dict[str, Any], token: str, user: str, private_cfg: dict[str, Any
         if dom not in cfg["domains"]:
             if priv: unclassified_private += 1
             else: unclassified_public.append(name)
-            continue
+            if not (cfg.get("unsorted") or {}).get("show", True):
+                continue
+            dom = None  # окрема група «без напрямку»
         if ov.get("about"):
             about = ov["about"]
         elif priv:  # опис приватного репо з GitHub — лише якщо явно дозволено
@@ -193,8 +195,13 @@ def fetch(cfg: dict[str, Any], token: str, user: str, private_cfg: dict[str, Any
     print(f"in graph: {len(out)} repos ({sum(x.private for x in out)} private); API calls: {gh.calls}")
     for d in cfg["domains"]:
         print(f"  {d}: {sum(x.domain == d for x in out)}")
+    print(f"  (no domain): {sum(x.domain is None for x in out)}")
     if unclassified_public:
-        print(f"no domain (public): {', '.join(unclassified_public)}  -> add domain_rules or topic domain-...")
+        print(f"no domain (public): {', '.join(unclassified_public)}")
     if unclassified_private:
-        print(f"no domain (private): {unclassified_private}  -> add domain_rules or GRAPH_PRIVATE")
+        print(f"no domain (private): {unclassified_private}")
+    if unclassified_public or unclassified_private:
+        shown = (cfg.get("unsorted") or {}).get("show", True)
+        print("  -> " + ("shown as loose groups by main language" if shown else "hidden (unsorted.show: false)")
+              + "; to assign: domain_rules, topic domain-..., or GRAPH_PRIVATE")
     return out

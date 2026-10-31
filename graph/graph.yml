@@ -31,7 +31,14 @@ domain_rules:
   Telegram bots: [aiogram, PTB, telebot, Telethon, Pyrogram, grammY, Telegraf, telegram-bot]
   Desktop and tools: [Tauri, Electron, Rust, Apps Script]
   Web apps: [Firebase, React, Vue, Svelte, Next.js, HTML, JavaScript]
-default_domain: null           # куди класти репо, яке не підійшло жодному правилу; null — не показувати
+default_domain: null           # примусово класти «непідібрані» репо в цей напрямок; null — див. unsorted
+
+# Репо без напрямку (публічні й приватні) показуються окремими «вільними» групами
+# за основною мовою — з центром не з'єднані, пунктирні.
+unsorted:
+  show: true                   # false — не показувати їх зовсім
+  label: "{lang} · other"      # підпис групи; {lang} — основна мова
+  max_groups: 3                # решта мов зливається в групу "misc"
 
 private_about_from_github: false   # true — брати опис приватних репо з поля description на GitHub
 
@@ -49,3 +56,4 @@ limits:
   min_lang_share: 0.05         # мова з часткою < 5% у репо не стає ребром
   max_tech: 18                 # максимум технологій на зовнішньому кільці
   highlight_slots: 12          # скільки вузлів по черзі підсвічується
+  max_projects: 16             # більше — граф стає тісним; беруться найактивніші за комітами

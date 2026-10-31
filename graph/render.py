@@ -15,7 +15,7 @@ from pathlib import Path
 class Repo:
     name: str                       # для приватних НЕ потрапляє в SVG
     private: bool
-    domain: str
+    domain: str | None              # None → «без напрямку», потрапляє в окрему групу
     about: str
     langs: dict[str, int]           # байти по мовах
     stack: list[str]                # фреймворки/сервіси
@@ -34,6 +34,9 @@ class Data:
     min_lang_share: float = 0.05
     max_tech: int = 18
     max_slots: int = 12
+    max_projects: int = 16
+    unsorted_label: str = "{lang} · other"
+    max_groups: int = 3
 
 
 W, H = 960, 600
@@ -69,8 +72,19 @@ class Graph:
 
     def __init__(self, data: Data):
         self.d = data
-        self.repos = sorted(data.repos, key=lambda r: -r.commits)
+        self.repos = sorted(data.repos, key=lambda r: -r.commits)[: data.max_projects]
         self.domains = [k for k in data.domains if any(r.domain == k for r in self.repos)]
+        # репо без напрямку → вільні групи за основною мовою (не з'єднані з центром)
+        self.group_of: dict[int, str] = {}
+        loose = [r for r in self.repos if r.domain not in data.domains]
+        prim = {id(r): (max(r.langs, key=lambda l: r.langs[l]) if r.langs else "misc") for r in loose}
+        counts: dict[str, int] = {}
+        for r in loose:
+            counts[prim[id(r)]] = counts.get(prim[id(r)], 0) + 1
+        top = sorted(counts, key=lambda l: (-counts[l], l))[: data.max_groups]
+        for r in loose:
+            self.group_of[id(r)] = prim[id(r)] if prim[id(r)] in top else "misc"
+        self.groups = sorted(set(self.group_of.values()), key=lambda gname: (gname == "misc", -counts.get(gname, 0), gname))
         self.lang_bytes: dict[str, int] = {}
         self.tech_repos: dict[str, list[Repo]] = {}
         self.is_lang: dict[str, bool] = {}
@@ -99,9 +113,11 @@ class Graph:
         add("me", "me")
         for dm in self.domains:
             add(f"d:{dm}", "hub"); self.edges.append(("me", f"d:{dm}"))
+        for gname in self.groups:
+            add(f"g:{gname}", "group")
         for i, r in enumerate(self.repos):
             key = f"p:{i}"; add(key, "project"); self.repo_of[key] = r
-            self.edges.append((f"d:{r.domain}", key))
+            self.edges.append((self.parent(r), key))
         for t in self.techs:
             add(f"t:{t}", "tech")
             for r in self.tech_repos[t]:
@@ -111,14 +127,23 @@ class Graph:
             self.nb[a].append(b); self.nb[b].append(a)
         self._layout()
 
+    def parent(self, r: Repo) -> str:
+        return f"g:{self.group_of[id(r)]}" if id(r) in self.group_of else f"d:{r.domain}"
+
+    def loose(self, k: str) -> bool:
+        """Вузол належить вільній групі (проєкт без напрямку або сама група)."""
+        return self.kind[k] == "group" or (self.kind[k] == "project" and id(self.repo_of[k]) in self.group_of)
+
     # ---------- геометрія ----------
     def _layout(self) -> None:
         ang: dict[str, float] = {"me": 0.0}
-        n_dom = len(self.domains)
-        sector = 360 / max(n_dom, 1)
-        for i, dm in enumerate(self.domains):
-            a = -180 + (i + .5) * sector; ang[f"d:{dm}"] = a
-            ps = [k for k in self.nodes if self.kind[k] == "project" and self.repo_of[k].domain == dm]
+        parents = [f"d:{dm}" for dm in self.domains] + [f"g:{gn}" for gn in self.groups]
+        kids = {p: [k for k in self.nodes if self.kind[k] == "project" and self.parent(self.repo_of[k]) == p] for p in parents}
+        weight = {p: len(kids[p]) + 1.0 for p in parents}   # ширина сектора ∝ кількості проєктів
+        total = sum(weight.values()) or 1; cur = -180.0
+        for p in parents:
+            sector = 360 * weight[p] / total; a = cur + sector / 2; cur += sector
+            ang[p] = a; ps = kids[p]
             step = min(30.0, sector * .8 / max(len(ps), 1))
             for j, k in enumerate(ps):
                 ang[k] = a + (j - (len(ps) - 1) / 2) * step
@@ -140,7 +165,7 @@ class Graph:
         for k in list(self.nodes) + (["ghost"] if "ghost" in ang else []):
             if k == "me":
                 self.pos[k] = (CX, CY); continue
-            ring = "project" if k == "ghost" else self.kind[k]
+            ring = "project" if k == "ghost" else "hub" if self.kind[k] == "group" else self.kind[k]
             rx, ry = RINGS[ring]; a = math.radians(ang[k])
             self.pos[k] = (CX + rx * math.cos(a), CY + ry * math.sin(a))
 
@@ -162,6 +187,7 @@ class Graph:
         kind = self.kind[k]
         if kind == "me": return 9
         if kind == "hub": return 6
+        if kind == "group": return 5
         if kind == "project":
             c = self.repo_of[k].commits; return 6.5 if c >= 200 else 5.2 if c >= 100 else 4.2
         m = len(self.nb[k]); return 4.6 if m >= 3 else 3.6 if m == 2 else 2.8
@@ -170,6 +196,7 @@ class Graph:
         kind = self.kind[k]
         if kind == "me": return self.d.center
         if kind == "hub": return k[2:]
+        if kind == "group": return self.d.unsorted_label.format(lang=k[2:])
         if kind == "tech": return k[2:]
         name = self.repo_of[k].name
         return name if len(name) <= 18 else name[:17] + "…"
@@ -214,7 +241,7 @@ def _mask_words(name: str) -> list[int]:
 def graph_svg(g: Graph, theme: str) -> str:
     c = THEMES[theme]; d = g.d
     rnd = random.Random(5)
-    amp = {"me": 1.2, "hub": 2.2, "project": 2.8, "tech": 3.2}
+    amp = {"me": 1.2, "hub": 2.2, "group": 2.6, "project": 2.8, "tech": 3.2}
     keys = list(g.pos)
     DR = {k: Drift(rnd, amp["project" if k == "ghost" else g.kind[k]]) for k in keys}
     IDX = {k: i for i, k in enumerate(keys)}
@@ -241,15 +268,17 @@ def graph_svg(g: Graph, theme: str) -> str:
         return anim(kt + [CYCLE], vs + ["1"])
 
     def dom_col(k: str) -> str:
+        if g.loose(k):
+            return c["node"]
         dm = k[2:] if g.kind[k] == "hub" else g.repo_of[k].domain
-        return c.get(d.domains.get(dm, ""), c["node"])
+        return c.get(d.domains.get(dm or "", ""), c["node"])
 
     def ncol(k: str) -> str:
         kind = g.kind[k]
         return c["acc"] if kind == "me" else c["tech"] if kind == "tech" else dom_col(k)
 
     def focus_col(k: str) -> str:
-        return dom_col(k) if g.kind[k] == "project" else c["acc"]
+        return dom_col(k) if g.kind[k] == "project" and not g.loose(k) else c["acc"]
 
     halo = f'stroke="{c["bg2"]}" stroke-width="4" stroke-linejoin="round" paint-order="stroke"'
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" font-family="{FONT}">']
@@ -263,8 +292,12 @@ def graph_svg(g: Graph, theme: str) -> str:
                     + DR[a].a("x1", P[a][0], 0) + DR[a].a("y1", P[a][1], 1) + DR[b].a("x2", P[b][0], 0) + DR[b].a("y2", P[b][1], 1) + '</line>')
     for k in g.nodes:
         i, kind, (x, y) = IDX[k], g.kind[k], P[k]; r = g.radius(k)
-        shape = (f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="none" stroke-width="1.6"/><circle cx="{x:.1f}" cy="{y:.1f}" r="2"/>'
-                 if kind == "hub" else f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}"/>')
+        if kind == "hub":
+            shape = f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="none" stroke-width="1.6"/><circle cx="{x:.1f}" cy="{y:.1f}" r="2"/>'
+        elif kind == "group":  # пунктирне кільце: група «без напрямку», з центром не з'єднана
+            shape = f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="none" stroke-width="1.3" stroke-dasharray="2.2 2.2"/>'
+        else:
+            shape = f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}"/>'
         defs.append(f'<g id="c{i}">{DR[k].g()}{shape}</g>')
         lx, ly, anc, _ = g.label_spec(k)
         if kind == "project" and g.repo_of[k].private:
@@ -279,8 +312,10 @@ def graph_svg(g: Graph, theme: str) -> str:
                     f'<path d="M{x0 + 1.8:.1f} {ly - 6.3:.1f}v-1.6a2.2 2.2 0 0 1 4.4 0v1.6" fill="none" stroke="currentColor" stroke-width="1.3"/>')
             defs.append(f'<g id="t{i}">{DR[k].g()}{lock}{bars}</g>')
         else:
-            if kind == "hub":
-                txt = f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anc}" font-size="9.5" font-weight="600" letter-spacing="1.4">{escape(g.label(k).upper())}</text>'
+            if kind in ("hub", "group"):
+                op = ' opacity=".75"' if kind == "group" else ""
+                txt = (f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anc}" font-size="9.5" font-weight="600" letter-spacing="1.4"{op}>'
+                       f'{escape(g.label(k).upper())}</text>')
             else:
                 fs = {"me": 13, "project": 12, "tech": 11}[kind]; fw = 600 if kind == "me" else 500 if kind == "project" else 400
                 txt = f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anc}" font-size="{fs}" font-weight="{fw}">{escape(g.label(k))}</text>'
@@ -295,7 +330,8 @@ def graph_svg(g: Graph, theme: str) -> str:
     o.append(f'<g><animate attributeName="opacity" {dim(".16")}/>' if SEQ else '<g>')
     o.append('<g opacity="0"><animate attributeName="opacity" begin="1.1s" dur="1.1s" fill="freeze" values="0;1" calcMode="spline" keyTimes="0;1" keySplines="0.2 0 0.2 1"/>')
     for a, b in g.edges:
-        o.append(f'<use href="#e{IDX[a]}_{IDX[b]}" stroke="{c["link"]}" stroke-width="1"/>')
+        dash = ' stroke-dasharray="2 3"' if g.kind[a] == "group" or g.kind[b] == "group" else ""
+        o.append(f'<use href="#e{IDX[a]}_{IDX[b]}" stroke="{c["link"]}" stroke-width="1"{dash}/>')
     o.append('</g>')
     if "ghost" in P:
         gx, gy = P["ghost"]
@@ -307,7 +343,7 @@ def graph_svg(g: Graph, theme: str) -> str:
                  f'<text x="{lx:.1f}" y="{gy + 4:.1f}" text-anchor="{anc}" font-size="11" fill="{c["faint"]}" {halo}>{escape(d.ghost)}</text></g>')
     for k in g.nodes:
         i, kind, (x, y) = IDX[k], g.kind[k], P[k]
-        ring = {"me": 0, "hub": 1, "project": 2, "tech": 3}[kind]; delay = .15 + ring * .28 + (g.ang[k] % 360) / 360 * .25
+        ring = {"me": 0, "hub": 1, "group": 1, "project": 2, "tech": 3}[kind]; delay = .15 + ring * .28 + (g.ang[k] % 360) / 360 * .25
         ox, oy = (CX - x) * .35, (CY - y) * .35
         enter = (f'<animateTransform attributeName="transform" type="translate" dur="{1.2 + delay:.2f}s" fill="freeze" calcMode="spline" '
                  f'keyTimes="0;{delay / (1.2 + delay):.3f};1" keySplines="0 0 1 1;0.16 1 0.3 1" values="{ox:.1f} {oy:.1f};{ox:.1f} {oy:.1f};0 0"/>'
@@ -317,7 +353,7 @@ def graph_svg(g: Graph, theme: str) -> str:
         if kind == "me":
             extra = (f'<circle cx="{x}" cy="{y}" r="30" fill="url(#mehalo)"><animate attributeName="r" dur="7s" repeatCount="indefinite" '
                      f'calcMode="spline" keySplines="{EASE};{EASE}" values="24;34;24"/></circle>')
-        tcol = c["text"] if kind in ("me", "project") else c["dim"]
+        tcol = c["text"] if kind in ("me", "project") else c["faint"] if kind == "group" else c["dim"]
         col = ncol(k)
         o.append(f'<g>{enter}{extra}<use href="#c{i}" fill="{col}" stroke="{col}"/><use href="#t{i}" fill="{tcol}" color="{tcol}" {halo}/></g>')
     o.append('</g>')
@@ -422,10 +458,11 @@ def card_svg(g: Graph, theme: str) -> str:
     o.append(f'<text x="{cols[2]}" y="{base + 15}" font-size="9.5" fill="{c["faint"]}">{start}</text>'
              f'<text x="{cols[2] + CWID}" y="{base + 15}" font-size="9.5" fill="{c["faint"]}" text-anchor="end">now</text>')
     dc: dict[str, int] = {}
-    for r in g.repos:
+    homed = [r for r in g.repos if r.domain in g.domains]
+    for r in homed:
         dc[r.domain] = dc.get(r.domain, 0) + sum(r.weekly)
     if not any(dc.values()):
-        for r in g.repos:
+        for r in homed:
             dc[r.domain] += r.commits
     top = max(dc, key=lambda k: dc[k]) if dc else ""
     last = min((r.pushed_days for r in g.repos), default=0)
