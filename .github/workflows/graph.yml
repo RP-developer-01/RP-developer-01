@@ -1,0 +1,40 @@
+name: Update project graph
+
+on:
+  schedule:
+    - cron: "17 4 * * *"       # щодня ~06:17 за Києвом
+  workflow_dispatch:
+  push:
+    paths: ["graph/**", ".github/workflows/graph.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: project-graph
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml==6.0.2
+      - name: Render graph
+        run: python graph/build.py
+        env:
+          GH_TOKEN: ${{ secrets.GRAPH_TOKEN || secrets.GITHUB_TOKEN }}
+          GRAPH_PRIVATE: ${{ secrets.GRAPH_PRIVATE }}
+          GH_USER: ${{ github.repository_owner }}
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/graph-*.svg assets/stats-*.svg
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update project graph"
+            git push
+          fi
