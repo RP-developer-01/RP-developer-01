@@ -41,7 +41,7 @@ unsorted:
   max_groups: 3                # решта мов зливається в групу "misc"
 
 highlight_dim: 0.68                 # як сильно притухає решта графа під час підсвітки: 1 — зовсім ні, 0.2 — сильно
-private_labels: none               # none — приватні репо без підпису (опис з'являється при підсвітці); mask — плашки замість назви
+private_labels: lock               # lock — замок + опис з GRAPH_PRIVATE (назва НЕ показується); none — без підпису; mask — плашки
 private_about_from_github: false   # true — брати опис приватних репо з поля description на GitHub
 
 # Ручні винятки ТІЛЬКИ для публічних репо

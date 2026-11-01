@@ -32,7 +32,7 @@ class Data:
     ghost: str = ""
     updated: date = field(default_factory=date.today)
     min_lang_share: float = 0.15
-    private_labels: str = "none"    # none — приватні без підпису; mask — плашки замість назви
+    private_labels: str = "lock"    # lock — замок + опис; none — без підпису; mask — плашки замість назви
     highlight_dim: float = 0.68     # наскільки притухає решта графа під час підсвітки (1 — не притухає)
     max_tech: int = 18
     max_slots: int = 12
@@ -261,14 +261,26 @@ class Graph:
     def fs(self, k: str) -> float:
         return {"me": 13, "hub": 9.5, "group": 9.5, "project": 11.5, "tech": 10.5}[self.kind[k]]
 
+    def is_private(self, k: str) -> bool:
+        return self.kind[k] == "project" and self.repo_of[k].private
+
     def text_w(self, k: str) -> float:
         t = self.label_text(k); f = self.fs(k)
+        if self.is_private(k) and self.d.private_labels == "lock":
+            return 9 + (4 + len(t) * f * .92 * .56 if t else 0)
         return len(t) * f * (.62 if self.kind[k] in ("hub", "group") else .56) + (len(t) * 1.4 if self.kind[k] in ("hub", "group") else 0)
 
     def label_text(self, k: str) -> str:
-        if self.kind[k] == "project" and self.repo_of[k].private and self.d.private_labels == "none":
-            return ""
+        if self.is_private(k):
+            if self.d.private_labels == "none":
+                return ""
+            if self.d.private_labels == "lock":   # справжня назва не показується ніколи — лише опис з GRAPH_PRIVATE
+                a = self.repo_of[k].about
+                return a if len(a) <= 22 else a[:21].rstrip() + "…"
         return self.label(k)
+
+    def has_label(self, k: str) -> bool:
+        return bool(self.label_text(k)) or (self.is_private(k) and self.d.private_labels in ("lock", "mask"))
 
     def _place_labels(self) -> None:
         boxes: list[tuple[float, float, float, float]] = []
@@ -279,7 +291,7 @@ class Graph:
         self.lab: dict[str, tuple[float, float, str, int]] = {}
         self.lab_overlap = 0.0
         for k in order:
-            x, y = self.pos[k]; r = self.radius(k); f = self.fs(k); w = self.text_w(k) if self.label_text(k) else 60
+            x, y = self.pos[k]; r = self.radius(k); f = self.fs(k); w = self.text_w(k) if self.has_label(k) else 60
             cands = [
                 (x, y + r + f + 3, "middle", 1, (x - w / 2, y + r + 2, x + w / 2, y + r + f + 5)),
                 (x + r + 6, y + f * .35, "start", 1, (x + r + 4, y - f * .6, x + r + 6 + w, y + f * .5)),
@@ -295,9 +307,8 @@ class Graph:
                 return s
             pick = min(cands, key=lambda c: overlap(c[4]) + cands.index(c) * 4)
             self.lab[k] = pick[:4]
-            if self.label_text(k):
+            if self.has_label(k):
                 self.lab_overlap += overlap(pick[4])
-            if self.label_text(k):
                 boxes.append(pick[4])
         self.boxes = boxes
 
@@ -363,6 +374,35 @@ def _mask_words(name: str) -> list[int]:
     return [rnd.randint(4, 8) for _ in range(rnd.choice((1, 2, 2)))]
 
 
+def legend(g: Graph, c: dict[str, str]) -> str:
+    """Легенда в правому нижньому куті: що означає кожен тип вузла."""
+    y = H - 23.5; dom_cols = [c.get(g.d.domains[dm], c["node"]) for dm in g.domains] or [c["node"]]
+    def proj(x: float) -> str:  # дві точки в кольорах напрямків
+        return (f'<circle cx="{x + 3:.1f}" cy="{y}" r="3.6" fill="{dom_cols[0]}"/>'
+                f'<circle cx="{x + 11:.1f}" cy="{y}" r="3.6" fill="{dom_cols[1 % len(dom_cols)]}"/>'), 17
+    def lock(x: float) -> str:
+        return (f'<rect x="{x:.1f}" y="{y - 2.5:.1f}" width="8.5" height="6.5" rx="1.5" fill="{c["dim"]}"/>'
+                f'<path d="M{x + 2:.1f} {y - 2.3:.1f}v-1.7a2.25 2.25 0 0 1 4.5 0v1.7" fill="none" stroke="{c["dim"]}" stroke-width="1.3"/>'), 11
+    def hub(x: float) -> str:
+        return (f'<circle cx="{x + 6:.1f}" cy="{y}" r="6.5" fill="none" stroke="{c["dim"]}" stroke-width="1" opacity=".5"/>'
+                f'<circle cx="{x + 6:.1f}" cy="{y}" r="3.6" fill="{c["dim"]}"/>'), 14
+    def tech(x: float) -> str:
+        return f'<circle cx="{x + 3:.1f}" cy="{y}" r="3" fill="{c["tech"]}"/>', 8
+    def group(x: float) -> str:
+        return f'<circle cx="{x + 5:.1f}" cy="{y}" r="4.5" fill="none" stroke="{c["faint"]}" stroke-width="1.2" stroke-dasharray="2 2"/>', 12
+    items = [(hub, "DIRECTION"), (proj, "PROJECT"), (lock, "PRIVATE"), (tech, "STACK")]
+    if g.groups:
+        items.append((group, "UNSORTED"))
+    widths = [fn(0)[1] + 6 + len(t) * 6.6 + 18 for fn, t in items]
+    x = W - 24 - sum(widths) + 18
+    out = []
+    for (fn, t), w in zip(items, widths):
+        shape, sw = fn(x)
+        out.append(shape + f'<text x="{x + sw + 6:.1f}" y="{H - 20}" font-size="10" fill="{c["faint"]}" letter-spacing=".4">{t}</text>')
+        x += w
+    return "<g>" + "".join(out) + "</g>"
+
+
 def graph_svg(g: Graph, theme: str) -> str:
     c = THEMES[theme]; d = g.d
     rnd = random.Random(5)
@@ -426,9 +466,17 @@ def graph_svg(g: Graph, theme: str) -> str:
             shape = f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}"/>'
         defs.append(f'<g id="c{i}">{DR[k].g()}{shape}</g>')
         lx, ly, anc, _ = g.label_spec(k)
-        if kind == "project" and g.repo_of[k].private and d.private_labels == "none":
+        if g.is_private(k) and d.private_labels == "none":
             defs.append(f'<g id="t{i}"/>')
-        elif kind == "project" and g.repo_of[k].private:
+        elif g.is_private(k) and d.private_labels == "lock":
+            about = g.label_text(k); tot = g.text_w(k); fsz = g.fs(k) * .92
+            x0 = lx if anc == "start" else lx - tot if anc == "end" else lx - tot / 2
+            yb = ly - 1
+            lock = (f'<rect x="{x0:.1f}" y="{yb - 6:.1f}" width="8.5" height="6.5" rx="1.5" fill="{c["dim"]}"/>'
+                    f'<path d="M{x0 + 2:.1f} {yb - 5.8:.1f}v-1.7a2.25 2.25 0 0 1 4.5 0v1.7" fill="none" stroke="{c["dim"]}" stroke-width="1.3"/>')
+            txt = (f'<text x="{x0 + 13:.1f}" y="{ly:.1f}" font-size="{fsz:.1f}" opacity=".85">{escape(about)}</text>' if about else "")
+            defs.append(f'<g id="t{i}">{DR[k].g()}{lock}{txt}</g>')
+        elif g.is_private(k):
             ww = [w * 5.6 for w in _mask_words(g.repo_of[k].name)]; tot = sum(ww) + 5 * (len(ww) - 1) + 14
             x0 = lx if anc == "start" else lx - tot if anc == "end" else lx - tot / 2
             bars = ""; bx = x0 + 14
@@ -484,6 +532,7 @@ def graph_svg(g: Graph, theme: str) -> str:
     n_priv = sum(r.private for r in g.repos)
     o.append(f'<text x="24" y="{H - 20}" font-size="10" fill="{c["faint"]}" letter-spacing=".4">'
              f'{len(g.repos)} REPOS  ·  {n_priv} PRIVATE  ·  UPDATED {d.updated.strftime("%d %b %Y").upper()}</text>')
+    o.append(legend(g, c))
 
     # шари підсвітки
     for si, f in enumerate(SEQ):
@@ -504,8 +553,13 @@ def graph_svg(g: Graph, theme: str) -> str:
             lines: list[str] = []
             if n == f and fk == "project":
                 rp = g.repo_of[f]
-                first = ("private" + (f" · {rp.about}" if rp.about else "")) if rp.private else rp.about
-                lines = [s for s in (first, f"{rp.commits} commits · {_ago(rp.pushed_days)}") if s]
+                stat = f"{rp.commits} commits · {_ago(rp.pushed_days)}"
+                if rp.private and d.private_labels == "lock":
+                    lines = [f"private · {stat}"] if g.label_text(f) else ["private project", stat]
+                elif rp.private:
+                    lines = [s for s in ("private" + (f" · {rp.about}" if rp.about else ""), stat) if s]
+                else:
+                    lines = [s for s in (rp.about, stat) if s]
             elif n == f and fk == "tech":
                 t = f[2:]; cnt = len(g.nb[f])
                 lines = [f"{cnt} repo{'s' if cnt != 1 else ''}" + (f" · {g.lang_bytes[t] / g.all_bytes:.0%} of code" if g.is_lang.get(t) else "")]
@@ -514,7 +568,7 @@ def graph_svg(g: Graph, theme: str) -> str:
             if lines:
                 lx, ly, anc, dr = g.label_spec(n)
                 seq = lines if dr > 0 else list(reversed(lines))
-                base = 0 if not g.label_text(n) else 1   # приватний без підпису — статистика стає на місце підпису
+                base = 1 if g.has_label(n) else 0   # без підпису — статистика стає на його місце
                 txt = "".join(f'<text x="{lx:.1f}" y="{ly + dr * 14 * (j + base):.1f}" text-anchor="{anc}" font-size="10.5" fill="{c["dim"]}" {halo} '
                               f'style="font-variant-numeric:tabular-nums">{escape(s)}</text>' for j, s in enumerate(seq))
                 L.append(f'<g>{DR[n].g()}{txt}</g>')
