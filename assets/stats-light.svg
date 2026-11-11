@@ -54,5 +54,5 @@
 <g opacity="0"><animate attributeName="opacity" begin="1.30s" dur=".7s" fill="freeze" values="0;1" calcMode="spline" keyTimes="0;1" keySplines="0.2 0 0.2 1"/><animateTransform attributeName="transform" type="translate" begin="1.30s" dur=".7s" fill="freeze" values="0 5;0 0" calcMode="spline" keyTimes="0;1" keySplines="0.16 1 0.3 1"/><text x="930.0" y="138.0" text-anchor="end" font-size="11" font-weight="500" fill="#26262c">0 this week</text></g>
 <text x="660" y="161" font-size="9.5" fill="#b4b4bc">May</text><text x="930" y="161" font-size="9.5" fill="#b4b4bc" text-anchor="end">now</text>
 <line x1="30" y1="174.5" x2="930" y2="174.5" stroke="#ececf0"/>
-<text x="30" y="193" font-size="10" fill="#b4b4bc" letter-spacing=".4">MOST ACTIVE <tspan fill="#6e6e78" font-weight="600">WEB APPS</tspan>  ·  LAST PUSH 1MO AGO  ·  UPDATED 10 NOV 2026</text>
+<text x="30" y="193" font-size="10" fill="#b4b4bc" letter-spacing=".4">MOST ACTIVE <tspan fill="#6e6e78" font-weight="600">WEB APPS</tspan>  ·  LAST PUSH 1MO AGO  ·  UPDATED 11 NOV 2026</text>
 </svg>
